@@ -1,6 +1,9 @@
 import React from 'react';
 import './App.css';
 
+import { Form, Col, Row, Button, Container, Card } from 'react-bootstrap';
+
+
 class MainApp extends React.Component {
   constructor(props) {
     super(props)
@@ -71,7 +74,6 @@ class MainApp extends React.Component {
 
 
   wsSend() {
-    console.log('was called');
     this.initializeWS(this.state.message);
   }
 
@@ -102,50 +104,70 @@ class MainApp extends React.Component {
   }
   render() {
     return (
-      <div>
-        <form onSubmit={this.handleSubmit}>
-          <label>
-            <h1><b>Moving Average</b></h1>
-          </label>
-          <label>
-            <h2>Choosing Currency Pair:</h2>
-            <select onChange={this.updateState}>
-              {this.state.names.map((pair) => <option key={pair}>{pair}</option>)}
-            </select>
-          </label>
-          <label>
-            <h2>Number if Ticks: </h2>
-            <input type="number" value={this.state.tickCount} onChange={this.setTickCount}></input>
-          </label>
-          <label>
-            <h2>Pip Difference: </h2>
-            <input type="number" value={this.state.pipDiff} onChange={this.setPipDiff}></input>
-          </label>
-          <input type="button" value="Submit" onClick={this.wsSend} />
-        </form>
-        <br />
-        <br />
-        <div className="row" style={{ paddingLeft: '10%', textAlign: 'center' }} >
-          <table style={{ background: 'white', color: 'black' }}>
-            <thead>
-              <tr>
-                <th width="20%" ><h3>Moving Average</h3></th>
-                <th width="20%" ><h3>Current Value</h3></th>
-                <th width="15%" ><h3>Buy/Sell</h3></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td width="20%" >{this.state.movingAverage !== 0 ? this.state.movingAverage : (
-                  <h2>Please Wait...</h2>
-                )}</td>
-                <td width="20%" >{this.state.currentValue !== 0 && this.state.currentValue}</td>
-                <td width="15%" style={{ color: this.state.option === 'BUY' ? 'green' : 'red' }}>{this.state.option}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <div className="body">
+        <Container>
+          <Row>
+            <Col >
+              <Form>
+                <Form.Label column style={{ textAlign: 'center' }}>
+                  <h1>Moving Average</h1>
+                </Form.Label>
+                <Form.Group as={Row} >
+                  <Form.Label column  >
+                    Choosing Currency Pair:
+                  </Form.Label>
+                  <Col >
+                  <Form.Control as="select" onChange={this.updateState}>
+                      {this.state.names.map((pair) => <option key={pair}>{pair}</option>)}
+                    </Form.Control>
+                  </Col>
+                </Form.Group>
+
+                <Form.Group as={Row} >
+                  <Form.Label column >
+                    Number if Ticks:
+            </ Form.Label>
+                  <Col >
+                    <Form.Control type="number" placeholder="number of ticks" value={this.state.tickCount} onChange={this.setTickCount} />
+                  </Col>
+                </Form.Group>
+                <Form.Group as={Row} >
+                  <Form.Label column >
+                    Pip Difference:
+            </ Form.Label>
+                  <Col>
+                    <Form.Control type="number" placeholder="pip difference" value={this.state.pipDiff} onChange={this.setPipDiff} />
+                  </Col>
+                </Form.Group>
+                <Button variant="primary" onClick={this.wsSend}>Submit</Button>
+              </Form>
+              <Card>
+                <Card.Body>
+                  <table className="table table-borderless" style={{ background: 'white', color: 'black' }}>
+                    <thead>
+                      <tr>
+                        <th  ><h3>Moving Average</h3></th>
+                        <th  ><h3>Current Value</h3></th>
+                        <th  ><h3>Buy/Sell</h3></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td  >{this.state.movingAverage !== 0 ? this.state.movingAverage : (
+                          <h2>Please Wait...</h2>
+                        )}</td>
+                        <td  >{this.state.currentValue !== 0 && this.state.currentValue}</td>
+                        <td style={{ color: this.state.option === 'BUY' ? 'green' : 'red' }}>{this.state.option}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </div >
     )
   }
 }
