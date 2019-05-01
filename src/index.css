@@ -1,3 +1,7 @@
 /*
  * css goes here
  */
+body {
+    background: rgb(38, 48, 48);
+     color: white;
+ }
