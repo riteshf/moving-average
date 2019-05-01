@@ -1,6 +1,5 @@
 import React from 'react';
 import './App.css';
-import { Container, Row, Col } from 'react-bootstrap';
 
 class MainApp extends React.Component {
   constructor(props) {
@@ -11,31 +10,31 @@ class MainApp extends React.Component {
       data: '',
       tickCount: 10,
       pipDiff: 15,
+      movingAverage: 0,
+      currentValue: 0,
+      option: '',
     }
     this.updateState = this.updateState.bind(this);
     this.setTickCount = this.setTickCount.bind(this);
     this.setPipDiff = this.setPipDiff.bind(this);
     this.initializeWS = this.initializeWS.bind(this);
     this.getCcyPair = this.getCcyPair.bind(this);
+    this.wsSend = this.wsSend.bind(this);
     this.calcMA = this.calcMA.bind(this);
   }
 
   updateState(e) {
-    /*
-     *  Set message.currencyPair to the selected option from the dropdown.
-    */
-
+    var message = { ...this.state.message }
+    message.currencyPair = e.target.value;
+    this.setState({ message })
   }
 
   setTickCount(e) {
-    /*
-     * Set tickCount here
-     */
+    this.setState({ tickCount: e.target.value });
   }
+
   setPipDiff(e) {
-    /*
-     * Set pipDiff here
-     */
+    this.setState({ pipDiff: e.target.value });
   }
 
   initializeWS(messageValue) {
@@ -44,29 +43,48 @@ class MainApp extends React.Component {
      * 2. Calculate moving average and display Moving average, Current Value and Buy/Sell (depending on the pipDiff)
      * 3. Return the webSocket.
      */
+    let Socket = new WebSocket('wss://stocksimulator.intuhire.com');
+    let bindThis = this;
+    Socket.onopen = function (evt) {
+      Socket.send(JSON.stringify(messageValue));
+      let data = [];
+      Socket.onmessage = function (event) {
+        let currentValue = parseFloat(event.data).toFixed(4);
+        data.push(currentValue);
+        if (data.length > bindThis.state.tickCount) {
+          let option = '';
+          data.slice(1, bindThis.state.tickCount);
+          let movingAverage = parseFloat(data.reduce((acc, curr) => acc + curr)).toFixed(4);
+          let diff = Math.round(Math.abs((movingAverage - currentValue) * 10000));
+          if (currentValue < movingAverage && diff <= bindThis.state.pipDiff) {
+            option = 'BUY';
+          } else if (currentValue > movingAverage && diff >= bindThis.state.pipDiff) {
+            option = 'SELL';
+          }
+          bindThis.setState({ currentValue, movingAverage, option });
+        }
+      }
+    };
+
+    // Socket.close();
   }
 
 
   wsSend() {
-    /*
-     * Get the JSON messageValue from the selected currency pair in the dropdown and call initializeWS()
-     */
+    console.log('was called');
+    this.initializeWS(this.state.message);
   }
 
   getCcyPair() {
-    /*
-  	 * Use the REST API to get the list of currency pairs
-  	 */
     let currentPairs = [];
     fetch('https://restsimulator.intuhire.com/currency_pairs')
-      .then(response => {
-        return response.json();
-      }).then(data => {
-        currentPairs = data.map(({ currency_name }) => {
-          return currency_name
-        });
-        console.log(currentPairs);
+      .then(response => response.json())
+      .then(data => {
+        currentPairs = data.map(({ currency_name }) => currency_name);
+        var message = { ...this.state.message }
+        message.currencyPair = currentPairs[0];
         this.setState({
+          message,
           names: currentPairs,
         });
       });
@@ -74,9 +92,9 @@ class MainApp extends React.Component {
   }
 
   calcMA() {
-		/*
-		 * Call wsSend()
-		 */
+    /*
+     * Call wsSend()
+     */
   }
 
   componentDidMount() {
@@ -84,31 +102,50 @@ class MainApp extends React.Component {
   }
   render() {
     return (
-      <Container>
-        <Row>
-          <Col md={{ span: 4, offset: 4 }}>
+      <div>
+        <form onSubmit={this.handleSubmit}>
+          <label>
             <h1><b>Moving Average</b></h1>
-          </Col>
-        </Row>
-        <Row>
-          <Col md={{ span: 3, offset: 4 }}>
+          </label>
+          <label>
             <h2>Choosing Currency Pair:</h2>
-            <select>
+            <select onChange={this.updateState}>
               {this.state.names.map((pair) => <option key={pair}>{pair}</option>)}
             </select>
-          </Col>
-        </Row>
-        <Row>
-          <Col md={{ span: 4, offset: 4 }}>
-            <h2>Number if Ticks</h2>
-          </Col>
-        </Row>
-        <Row>
-          <Col md={{ span: 4, offset: 4 }}>
-            <h2>Pip Difference</h2>
-          </Col>
-        </Row>
-      </Container>
+          </label>
+          <label>
+            <h2>Number if Ticks: </h2>
+            <input type="number" value={this.state.tickCount} onChange={this.setTickCount}></input>
+          </label>
+          <label>
+            <h2>Pip Difference: </h2>
+            <input type="number" value={this.state.pipDiff} onChange={this.setPipDiff}></input>
+          </label>
+          <input type="button" value="Submit" onClick={this.wsSend} />
+        </form>
+        <br />
+        <br />
+        <div className="row" style={{ paddingLeft: '10%', textAlign: 'center' }} >
+          <table style={{ background: 'white', color: 'black' }}>
+            <thead>
+              <tr>
+                <th width="20%" ><h3>Moving Average</h3></th>
+                <th width="20%" ><h3>Current Value</h3></th>
+                <th width="15%" ><h3>Buy/Sell</h3></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td width="20%" >{this.state.movingAverage !== 0 ? this.state.movingAverage : (
+                  <h2>Please Wait...</h2>
+                )}</td>
+                <td width="20%" >{this.state.currentValue !== 0 && this.state.currentValue}</td>
+                <td width="15%" style={{ color: this.state.option === 'BUY' ? 'green' : 'red' }}>{this.state.option}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     )
   }
 }
